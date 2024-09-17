@@ -14,6 +14,12 @@ public final class SimpleTask implements Task {
 
     // constructor
     public SimpleTask(String newId, Duration estDuration){
+        // check for null values
+        if(newId == null)
+            throw new NullPointerException("Task cannot be created with null id");
+        if(estDuration == null)
+            throw new NullPointerException("Task cannot be created without an estimated Duration");
+
         // initialize variables with input parameters
         id = newId;
         duration = estDuration;
@@ -36,7 +42,7 @@ public final class SimpleTask implements Task {
 
     // returns the completion status of the task
     @Override
-    public Boolean isCompleted() {
+    public boolean isCompleted() {
         return complete;
     }
 

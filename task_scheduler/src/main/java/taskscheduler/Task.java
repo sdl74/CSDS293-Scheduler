@@ -9,7 +9,7 @@ public interface Task {
     public void execute() throws TaskException;
 
     // true if the task has finished executing, false otherwise
-    public Boolean isCompleted();
+    public boolean isCompleted();
 
     // returns the estimated duration of the task
     public Duration getEstimatedDuration();

@@ -16,6 +16,8 @@ public class TaskScheduler {
     // adds a server to the list of servers
     public void addServer(Server server){
         // check for null
+        if(server == null)
+            throw new NullPointerException("cannot add null to server list");
 
         // copy server then add it to serverList
         servers.add(new Server(server));
@@ -23,14 +25,16 @@ public class TaskScheduler {
 
     // schedules a task to some available server
     public void scheduleTask(Task task){
+        // check for null
+        if(task == null)
+            throw new NullPointerException("cannot schedule null task");
+
         // assign task to server if any are available
         if(!servers.isEmpty())
             servers.get(nextServer).addTask(task);
         else{
-            // no servers are available to schedule the task
-            // should throw schedulerException instead
-            System.out.println("No Servers Available!");
-            return;
+            // no servers are available to schedule the task, throw error
+            throw new SchedulerException("no servers are available to schedule to");
         }
 
         // increment server index and check for bound
@@ -46,14 +50,7 @@ public class TaskScheduler {
         Map<Server, List<Task>> completedTasks = new HashMap<>();
 
         // call the execute command for each server and collect the completed tasks in completedTasks
-        try{
-            servers.stream().forEach(s -> completedTasks.put(s, s.executeTasks()));
-        }catch(ServerException e){
-            // if any of the servers throw an error, catch and wrap into a SchedulerException
-            // instead of e.toString, use explicit message.
-            // also don't wrap other errors in new classes
-            throw new SchedulerException(e.toString());
-        }
+        servers.stream().forEach(s -> completedTasks.put(s, s.executeTasks()));
 
         // return completedTasks Map
         return completedTasks;

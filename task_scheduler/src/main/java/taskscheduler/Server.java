@@ -9,6 +9,9 @@ public class Server{
     // list of tasks in the queue
     private List<Task> taskQueue = new ArrayList<>();
 
+    // list of failed tasks
+    private List<Task> failedTasks = new ArrayList<>();
+
     // constructor (doesn't do anything right now)
     public Server(){
 
@@ -16,26 +19,29 @@ public class Server{
 
     // copy constructor (for defensive copying). creates a new Server that is a copy of s
     public Server(Server s){
+        // check for null
+        if(s == null)
+            throw new NullPointerException("cannot create a copy of a null server");
+
         // copy the taskQueue
         this.taskQueue = new ArrayList<>(s.taskQueue);
     }
 
     // adds a task to the queue
     public void addTask(Task task){
+        // check for null task
+        if(task == null)
+            throw new NullPointerException("cannot add null task to the queue");
+
+        // add the task to the queue
         taskQueue.add(task);
     }
 
     // executes all tasks in the queue and returns a list of completed tasks
     // all completed tasks will be removed from the queue
     public List<Task> executeTasks() throws ServerException {
-        // try catch statement for TaskExceptions
-        try {
-            // execute task queue as a stream
-            taskQueue.stream().forEach(Task::execute);
-        } catch (TaskException e) {
-            // if any task throws an exception, catch it and throw a ServerException
-            throw new ServerException(e.toString());
-        }
+        // execute task queue as a stream
+        taskQueue.stream().forEach(Task::execute);
 
         // get completed tasks
         List<Task> completedTasks = taskQueue.stream()
@@ -47,15 +53,19 @@ public class Server{
             .filter(t -> !t.isCompleted())
             .collect(Collectors.toList());
 
+        // all tasks that are left on the queue must have failed, so they are moved to the failedTasks list
+        failedTasks = taskQueue;
+
+        // clear taskQueue
+        taskQueue = new ArrayList<>();
+
         // return list of completed tasks
         return completedTasks;
     }
 
     // returns a list of all the failed tasks
     public List<Task> getFailedTasks(){
-        // return all tasks that have not completed
-        return taskQueue.stream()
-            .filter(t -> !t.isCompleted())
-            .collect(Collectors.toList());
+        // make defensive copy and return failedTask list
+        return new ArrayList<>(failedTasks);
     }
 }
