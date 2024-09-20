@@ -2,7 +2,7 @@ package taskscheduler;
 
 // a basic implementation of the Task interface
 // SimpleTask is immutable
-public final class SimpleTask implements Task {
+public class SimpleTask implements Task {
     // a unique string identifier for the task
     private final String id;
 
@@ -34,7 +34,8 @@ public final class SimpleTask implements Task {
     // attempts to execute the task (TaskException is not always thrown when task fails)
     @Override
     public void execute() throws TaskException {
-        // do the task
+        // do the task (for testing purposes, this prints out the task id)
+        System.out.println("executing task: " + id);
 
         // set the complete flag to true
         complete = true;
@@ -50,5 +51,11 @@ public final class SimpleTask implements Task {
     @Override
     public Duration getEstimatedDuration() {
         return duration;
+    }
+
+    // returns the default priority (MEDIUM)
+    @Override
+    public TaskPriority getPriority(){
+        return TaskPriority.MEDIUM;
     }
 }

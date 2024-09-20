@@ -13,4 +13,7 @@ public interface Task {
 
     // returns the estimated duration of the task
     public Duration getEstimatedDuration();
+
+    // returns the priority of the task
+    public TaskPriority getPriority();
 }

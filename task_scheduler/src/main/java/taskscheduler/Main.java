@@ -15,22 +15,22 @@ public class Main {
         taskScheduler.addServer(s1);
         taskScheduler.addServer(s2);
 
-        // create 3 tasks and schedule them with the task scheduler
-        Task t1 = new SimpleTask("Task 1", Duration.ofMillis(3));
-        Task t2 = new SimpleTask("Task 2", Duration.ofMillis(17));
-        Task t3 = new SimpleTask("Task 3", Duration.ofMillis(6));
+        // create a few tasks with varying priority and schedule them
+        Task updateSystem = new PriorityTask("update system", Duration.ofMillis(300), TaskPriority.LOW);
+        Task checkInternet = new PriorityTask("check internet", Duration.ofMillis(20), TaskPriority.MEDIUM);
+        Task userInput = new PriorityTask("user input", Duration.ofMillis(2), TaskPriority.HIGH);
+        Task drawCircle = new SimpleTask("draw circle", Duration.ofMillis(10));
+        Task sendEmail = new PriorityTask("send email", Duration.ofMillis(30), TaskPriority.LOW);
+        Task importantTask = new PriorityTask("important task", Duration.ofMillis(1), TaskPriority.HIGH);
 
-        taskScheduler.scheduleTask(t1);
-        taskScheduler.scheduleTask(t2);
-        taskScheduler.scheduleTask(t3);
+        taskScheduler.scheduleTask(updateSystem);
+        taskScheduler.scheduleTask(checkInternet);
+        taskScheduler.scheduleTask(userInput);
+        taskScheduler.scheduleTask(drawCircle);
+        taskScheduler.scheduleTask(sendEmail);
+        taskScheduler.scheduleTask(importantTask);
 
-        // execute the tasks
-        Map<Server, List<Task>> completedTasks = taskScheduler.executeAll();
-
-        // print out the ids of each completed task
-        completedTasks.forEach((k, v) -> {
-            System.out.println("Server Tasks: ");
-            ((List<Task>)v).forEach(t -> System.out.println("completed " + t.getId()));
-        });
+        // execute the tasks (keep in mind that servers execute in series)
+        taskScheduler.executeAll();
     }
 }
