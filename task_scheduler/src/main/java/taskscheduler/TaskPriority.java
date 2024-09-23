@@ -12,12 +12,7 @@ public enum TaskPriority {
     // constructs and returns a sorted (from high to low) list of the task priorities
     public static List<TaskPriority> getOrder(){
         // create blank list
-        List<TaskPriority> sorted = new ArrayList<>();
-
-        // add the priorities
-        sorted.add(HIGH);
-        sorted.add(MEDIUM);
-        sorted.add(LOW);
+        List<TaskPriority> sorted = List.of(HIGH, MEDIUM, LOW);
 
         // return the list
         return sorted;

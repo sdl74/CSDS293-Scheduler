@@ -10,7 +10,7 @@ public class PriorityTask extends SimpleTask{
 
         // check if priority is not null
         if(newPriority == null)
-            throw new TaskException("priority cannot be null");
+            throw new TaskException("priority cannot be null"); // change to be NullException
 
         // set the priority level
         priority = newPriority;

@@ -15,7 +15,7 @@ public class Server{
     // list of failed tasks
     private List<Task> failedTasks = new ArrayList<>();
 
-    // constructor (doesn't do anything right now)
+    // constructor 
     public Server(){
         // create an empty list for each TaskPriority
         TaskPriority.getOrder().stream().forEach(priority -> taskQueues.put(priority, new ConcurrentLinkedQueue<>()));

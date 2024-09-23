@@ -54,6 +54,7 @@ public class SimpleTask implements Task {
     }
 
     // returns the default priority (MEDIUM)
+    // should notify user that default priority is medium
     @Override
     public TaskPriority getPriority(){
         return TaskPriority.MEDIUM;
