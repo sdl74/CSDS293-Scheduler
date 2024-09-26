@@ -4,9 +4,9 @@ public class PriorityTask extends SimpleTask{
     // priority
     private final TaskPriority priority;
 
-    public PriorityTask(String newId, Duration newDuration, TaskPriority newPriority) {
+    public PriorityTask(String newId, Duration newDuration, long realTime, TaskPriority newPriority) {
         // call super constructor
-        super(newId, newDuration);
+        super(newId, newDuration, realTime);
 
         // check if priority is not null
         if(newPriority == null)

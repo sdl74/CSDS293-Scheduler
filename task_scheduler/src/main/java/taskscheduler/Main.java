@@ -1,8 +1,5 @@
 package taskscheduler;
 
-import java.util.List;
-import java.util.Map;
-
 // this class shows off the TaskScheduler
 public class Main {
     public static void main(String[] args) {
@@ -16,12 +13,12 @@ public class Main {
         taskScheduler.addServer(s2);
 
         // create a few tasks with varying priority and schedule them
-        Task updateSystem = new PriorityTask("update system", Duration.ofMillis(300), TaskPriority.LOW);
-        Task checkInternet = new PriorityTask("check internet", Duration.ofMillis(20), TaskPriority.MEDIUM);
-        Task userInput = new PriorityTask("user input", Duration.ofMillis(2), TaskPriority.HIGH);
-        Task drawCircle = new SimpleTask("draw circle", Duration.ofMillis(10));
-        Task sendEmail = new PriorityTask("send email", Duration.ofMillis(30), TaskPriority.LOW);
-        Task importantTask = new PriorityTask("important task", Duration.ofMillis(1), TaskPriority.HIGH);
+        Task updateSystem = new PriorityTask("update system", Duration.ofMillis(300), 10, TaskPriority.LOW);
+        Task checkInternet = new PriorityTask("check internet", Duration.ofMillis(20), 10, TaskPriority.MEDIUM);
+        Task userInput = new PriorityTask("user input", Duration.ofMillis(2), 10, TaskPriority.HIGH);
+        Task drawCircle = new SimpleTask("draw circle", Duration.ofMillis(10), 10);
+        Task sendEmail = new PriorityTask("send email", Duration.ofMillis(30), 10, TaskPriority.LOW);
+        Task importantTask = new PriorityTask("important task", Duration.ofMillis(1), 10, TaskPriority.HIGH);
 
         taskScheduler.scheduleTask(updateSystem);
         taskScheduler.scheduleTask(checkInternet);
