@@ -1,10 +1,11 @@
 package taskscheduler;
 
+import java.io.Serializable;
 import java.math.BigInteger;
 import java.time.LocalTime;
 
 // this class represents an amount of time in milliseconds
-public final class Duration{
+public final class Duration implements Serializable{
     // the duration (in milliseconds)
     private final BigInteger millis;
 
@@ -53,6 +54,7 @@ public final class Duration{
 
     // helper method to find the amount of time between two LocalTimes and return it as a Duration
     public static Duration timeBetween(LocalTime time1, LocalTime time2){
+        // separate null checks
         // check for null values
         if(time1 == null || time2 == null)
             throw new NullPointerException("LocalTime provided cannot be null");

@@ -2,11 +2,16 @@ package taskscheduler;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.Executors;
 
 // a basic implementation of the Task interface
 // SimpleTask is immutable
 public class SimpleTask implements Task {
+    // executor service
+    private static ExecutorService executor = Executors.newFixedThreadPool(10);
+
     // a unique string identifier for the task
     private final String id;
 
@@ -42,18 +47,20 @@ public class SimpleTask implements Task {
     // attempts to execute the task (TaskException is not always thrown when task fails)
     @Override
     public Future<Void> execute() throws TaskException {
-        // force the thread to sleep for the real amount of time the task takes (to simulate the task actually executing)
-        try{
-            Thread.sleep(realDuration);
-        }catch(InterruptedException e){
-            // replace with log later
-            System.out.println("task was interrupted");
-        }
+        return executor.submit(() -> {
+            // force the thread to sleep for the real amount of time the task takes (to simulate the task actually executing)
+            try{
+                Thread.sleep(realDuration);
+            }catch(InterruptedException e){
+                // replace with log later
+                System.out.println("task was interrupted");
+            }
 
-        // set the complete flag to true
-        complete = true;
+            // set the complete flag to true
+            complete = true;
 
-        return null;
+            return null;
+        });
     }
 
     // gives the task an opportunity to clean up resources or roll back database transactions if the task fails / gets timed out
@@ -79,6 +86,7 @@ public class SimpleTask implements Task {
     // should notify user that default priority is medium (how should I convey this to the user in the README?)
     @Override
     public TaskPriority getPriority(){
+        // create new priority NONE (lower than LOW)
         return TaskPriority.MEDIUM;
     }
 

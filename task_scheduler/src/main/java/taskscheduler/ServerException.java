@@ -8,4 +8,9 @@ public class ServerException extends RuntimeException {
         // call super
         super(s);
     }
+
+    // constructor for other error
+    public ServerException(Exception e){
+        super(e);
+    }
 }

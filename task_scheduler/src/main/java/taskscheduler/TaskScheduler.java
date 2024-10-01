@@ -24,7 +24,7 @@ public class TaskScheduler {
     // policy dictating how many retries each task gets & how the time scales
     private RetryPolicy retryPolicy;
     // priority queue keeping track of tasks to retry & when they can be retried
-    private PriorityQueue<Retry> retryQueue;
+    private PriorityQueue<Retry> retryQueue = new PriorityQueue<>();
     // hashmap connecting a Task id with the amount of times it has been retried
     private Map<String, Integer> taskAttempts = new HashMap<>();
 
@@ -45,6 +45,9 @@ public class TaskScheduler {
 
         // create blank priorityQueues for each priority in waitTimes
         TaskPriority.getOrder().forEach(p -> waitTimes.put(p, new PriorityQueue<ServerWait>()));
+
+        // create new performance monitor
+        performanceMonitor = new PerformanceMonitor();
     }
 
     // constructor which uses a default retry policy (no retries and doesn't matter delay between retries)
@@ -67,9 +70,6 @@ public class TaskScheduler {
 
         // for each TaskPriority, add a new ServerWait entry to the waitTimes
         waitTimes.forEach((priority, serverList) -> serverList.add(new ServerWait(Duration.ofMillis(0), copy)));
-
-        // add server to performance monitor
-        performanceMonitor.addServerStats(copy.getStats());
     }
 
     // schedules a task to some available server
@@ -109,10 +109,7 @@ public class TaskScheduler {
         // loop until no more tasks can run (waits for task dependencies & retries)
         while(tasksQueued){
             // holds the most recent batch of completed tasks for checking dependencies
-            Map<Server, List<Task>> taskBatch = new HashMap<>();
-
-            // execute all task queues in each server, saving the completed tasks in the taskBatch
-            executeTaskBatch(servers);
+            Map<Server, List<Task>> taskBatch = executeTaskBatch(servers);
 
             // add completed tasks to completedTasks
             servers.stream().forEach(s -> completedTasks.get(s).addAll(taskBatch.get(s)));
@@ -163,14 +160,29 @@ public class TaskScheduler {
         // holds completed tasks
         Map<Server, List<Task>> completed = new HashMap<>();
 
+        // holds tasks that couldn't get executed this batch -> gets scheduled later
+        List<Task> rescheduleList = new ArrayList<>();
+
         // call execute on each server and collect completed tasks
-        servers.stream().forEach(s -> completed.put(s, s.executeTasks()));
+        servers.stream().forEach(s -> {
+            // encapsulate in try in case a server is unresponsive
+            try{
+                // execute tasks & put in completed task list
+                completed.put(s, s.executeTasks());
+            }catch(ServerException e){
+                // flush all tasks from server and add them to rescheduleList to get rescheduled for next batch
+                rescheduleList.addAll(s.removeAllTasks());
+            }
+        });
 
         // all queued tasks have been flushed, so reset flag & wait times
         tasksQueued = false;
         waitTimes.values().stream().forEach(q -> // iterate through each priority level
             q.stream().forEach(sw -> // iterate through each ServerWait
                 sw.expectedWait = Duration.ofMillis(0))); // set the wait time to 0
+        
+        // reschedule tasks that didn't get to execute (due to unresponsive server)
+        rescheduleList.stream().forEach(t -> queueTask(t));
 
         // return completed tasks
         return completed;
@@ -202,7 +214,7 @@ public class TaskScheduler {
     // schedules any tasks that can be retried at this moment in time & removes them from the retry queue
     private void scheduleRetries(){
         // check if the soonest task can be retried
-        while(retryQueue.peek().canRetry()){
+        while(!retryQueue.isEmpty() && retryQueue.peek().canRetry()){
             // pop the task from the queue & schedule it
             queueTask(retryQueue.poll().task);
         }
@@ -210,8 +222,20 @@ public class TaskScheduler {
 
     // collect all the failed tasks from each server and add them to the retryQueue if they can be retried
     private void collectFailedTasks(List<Server> servers){
-        // collect all the failed tasks into one list
-        List<Task> failedTasks = servers.stream().map(Server::getFailedTasks).flatMap(list -> list.stream()).collect(Collectors.toList());
+        // list containing all failed tasks
+        List<Task> failedTasks = new ArrayList<>();
+
+        // collect all the failed tasks into the list
+        servers.stream().forEach(server -> {
+            // try catch in case a server is unresponsive, just assume no tasks failed, and retry when server comes back online
+            try{
+                // gather failed tasks and add them to failedTasks list
+                failedTasks.addAll(server.getFailedTasks());
+            }catch(ServerException e){
+                // log that server is unavailable
+                LOGGER.warning("server is unresponsive so was unable to collect failed tasks for re-attempt");
+            }
+        });
 
         // update task attempt numbers
         failedTasks.stream().map(Task::getId).forEach(id -> {
@@ -235,29 +259,55 @@ public class TaskScheduler {
             if(attemptNum < retryPolicy.getMaxAttempts())
                 retryQueue.add(new Retry(task, retryPolicy.getTimeoutForAttempt(taskAttempts.get(task.getId()))));
             else // log that task gets abandoned
-                LOGGER.severe("task abandoned. id: " + task.getId());
+                LOGGER.severe("task abandoned due to too many attempts. id: " + task.getId());
         });
     }
 
     // this function schedules a task to a server without checking anything 
     private synchronized void queueTask(Task task){
-        // log task scheduled to server
-        LOGGER.info("task scheduled to server. id: " + task.getId());
+        // holds the destination server
+        ServerWait destServer = null;
 
-        // find the server with the shortest wait of this task's priority level
-        ServerWait destServer = waitTimes.get(task.getPriority()).poll();
+        // holds a list of servers that were pulled from waitTimes (which need to be added back after an appropriate server is found)
+        List<ServerWait> polledServers = new ArrayList<>();
+
+        // find the first available server with the shortest wait of this task's priority level
+        while(true){
+            // check to make sure there are servers available
+            if(waitTimes.isEmpty())
+                throw new SchedulerException("no servers are available to schedule task to");
+
+            // get server with shortest waitTime
+            destServer = waitTimes.get(task.getPriority()).poll();
+
+            // add to polledServers list
+            polledServers.add(destServer);
+
+            // skip server if it's offline
+            if(!destServer.server.isOnline())
+                continue;
+
+            // try to add the task to the server
+            try{
+                destServer.server.addTask(task);
+                break;
+            }catch(ServerException e){
+                // server threw some error while trying to add a task, report error and go on to next server
+                LOGGER.log(Level.WARNING, "server unavailable for scheduling: {0}", e.toString());
+            }
+        }
 
         // add the expected duration of this task to the server wait time
         destServer.expectedWait = destServer.expectedWait.add(task.getEstimatedDuration());
 
-        // add the task to the server
-        destServer.server.addTask(task);
-
-        // add the server wait back to the priorityQueue (which sorts it back into the queue)
-        waitTimes.get(task.getPriority()).add(destServer);
+        // add all servers pulled from waitTimes back (which sorts it back into the queue)
+        polledServers.stream().forEach(sw -> waitTimes.get(task.getPriority()).add(sw));
 
         // set tasksQueued to true since a task just got queued
         tasksQueued = true;
+
+        // log that a task was scheduled to a server
+        LOGGER.info("task scheduled to server. id: " + task.getId());
     }
 
     // this is an entry class to maintain a list of servers sorted by expected wait time

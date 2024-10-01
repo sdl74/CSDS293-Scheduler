@@ -1,20 +1,43 @@
 package taskscheduler;
 
-// view of ServerMonitor to access statistics without having full access to ServerMonitor
-public interface ServerStats {
+import java.util.Objects;
+
+// data class containing only getter methods for stats tracked by ServerMonitor
+public class ServerStats {
+
+    // data variables
+    private final int numTasksAttempted;
+    private final int numTasksComplete;
+    private final int numTasksFailed;
+    private final Duration totalExecutionTime;
+
+    public ServerStats(int attempted, int complete, int failed, Duration executionTime){
+        // check for null
+        Objects.requireNonNull(executionTime);
+
+        numTasksAttempted = attempted;
+        numTasksComplete = complete;
+        numTasksFailed = failed;
+        totalExecutionTime = executionTime;
+    }
 
     // getter method for tasksAttempted
-    public int getTasksAttempted();
+    public int getTasksAttempted(){
+        return numTasksAttempted;
+    }
 
     // getter method for tasksComplete
-    public int getTasksCompleted();
+    public int getTasksCompleted(){
+        return numTasksComplete;
+    }
 
     // getter method for tasksFailed
-    public int getTasksFailed();
+    public int getTasksFailed(){
+        return numTasksFailed;
+    }
 
     // getter method for execution time
-    public Duration getExecutionTime();
-
-    // starts the collection process
-    public void startTracking();
+    public Duration getExecutionTime(){
+        return totalExecutionTime;
+    }
 }

@@ -84,6 +84,7 @@ public class RetryPolicy {
             // convert time to long so we can do math
             long duration = initialDelay.toMillis();
 
+            // use bit shifting
             // calculates the delay using power function
             duration = duration * (long)Math.pow(2, attemptNum-1);
             

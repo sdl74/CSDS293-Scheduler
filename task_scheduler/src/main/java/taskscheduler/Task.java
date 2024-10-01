@@ -1,10 +1,11 @@
 package taskscheduler;
 
+import java.io.Serializable;
 import java.util.Set;
 import java.util.concurrent.Future;
 
 // an interface for all tasks, the basic unit of processing
-public interface Task {
+public interface Task extends Serializable{
     // max amount of time a task can run before being abandoned
     public static final Duration timeout = Duration.ofMillis(5000);
 

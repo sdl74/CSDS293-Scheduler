@@ -1,8 +1,26 @@
 package taskscheduler;
 
+import java.rmi.RemoteException;
+
 // this class shows off the TaskScheduler
 public class Main {
     public static void main(String[] args) {
+        //  create a remote server
+        try{
+            NetworkServer.main("test8D");
+        }catch(RemoteException e){
+            System.out.println(e.toString());
+        }
+
+        // simple check for remote server
+        RemoteServer rm = new RemoteServer("test8D");
+        rm.addTask(new SimpleTask("taskId", Duration.ofMillis(1), 10));
+        rm.executeTasks();
+
+        System.out.println("done");
+    }
+
+    public void oldMain(){
         // create a TaskScheduler
         TaskScheduler taskScheduler = new TaskScheduler();
 

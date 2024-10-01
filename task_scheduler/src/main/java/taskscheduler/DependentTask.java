@@ -13,6 +13,7 @@ public class DependentTask extends PriorityTask {
         // call super
         super(newId, newDuration, realTime, newPriority);
 
+        // use Objects.requireNotNull
         // check for null values
         if(newDependencies == null)
             throw new NullPointerException("dependency list cannot be null");

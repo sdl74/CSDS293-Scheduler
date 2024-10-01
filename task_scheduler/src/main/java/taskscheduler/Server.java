@@ -1,6 +1,5 @@
 package taskscheduler;
 
-import java.time.LocalTime;
 import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +29,9 @@ public class Server{
     public Server(){
         // create an empty list for each TaskPriority
         TaskPriority.getOrder().stream().forEach(priority -> taskQueues.put(priority, new ConcurrentLinkedQueue<>()));
+
+        // create ServerMonitor
+        serverMonitor = new ServerMonitor();
     }
 
     // copy constructor (for defensive copying). creates a new Server that is a copy of s
@@ -42,6 +44,9 @@ public class Server{
         this.taskQueues = new ConcurrentHashMap<>();
         for(TaskPriority p : TaskPriority.getOrder())
             this.taskQueues.put(p, new ConcurrentLinkedQueue<>(s.taskQueues.get(p)));
+        
+        // create serverMonitor
+        serverMonitor = new ServerMonitor();
     }
 
     // adds a task to the queue
@@ -124,83 +129,27 @@ public class Server{
 
     // returns a view of ServerMonitor
     public ServerStats getStats(){
-        return serverMonitor;
+        return serverMonitor.getSnapshot();
     }
 
-    // private class to monitor the task status
-    private class ServerMonitor implements ServerStats {
+    // returns whether the server is reachable
+    public boolean isOnline(){
+        // the base Server class is local, so always reachable
+        return true;
+    }
 
-        // variables to keep track of task status within a server
-        private int numTasksAttempted = 0;
-        private int numTasksComplete = 0;
-        private int numTasksFailed = 0;
-        private Duration totalExecutionTime = Duration.ofMillis(0);
+    // removes all tasks that have not executed from the queue and returns them in a list
+    public List<Task> removeAllTasks(){
+        // holds all the tasks to return
+        List<Task> allTasks = new ArrayList<>();
 
-        // keeps track of when the most recent task was started
-        private LocalTime taskStartTime;
+        // collect all tasks from the different queues
+        taskQueues.forEach((p, list) -> list.addAll(allTasks));
 
-        // getter method for tasksAttempted
-        @Override
-        public int getTasksAttempted(){
-            return numTasksAttempted;
-        }
+        // reset taskQueue
+        TaskPriority.getOrder().stream().forEach(priority -> taskQueues.put(priority, new ConcurrentLinkedQueue<>()));
 
-        // getter method for tasksComplete
-        @Override
-        public int getTasksCompleted(){
-            return numTasksComplete;
-        }
-
-        // getter method for tasksFailed
-        @Override
-        public int getTasksFailed(){
-            return numTasksFailed;
-        }
-
-        // getter method for execution time
-        @Override
-        public Duration getExecutionTime(){
-            return totalExecutionTime;
-        }
-
-        // resets all accumulated variables
-        @Override
-        public void startTracking(){
-            numTasksAttempted = 0;
-            numTasksComplete = 0;
-            numTasksFailed = 0;
-            totalExecutionTime = Duration.ofMillis(0);
-        }
-
-        // records the statistics about a task after it's done executing (or failed)
-        public void recordTask(boolean completionStatus){
-            // calculate amount of time task was running for
-            Duration executionTime = Duration.timeBetween(taskStartTime, LocalTime.now());
-
-            // clear taskStartTime
-            taskStartTime = null;
-
-            // update tasksAttempted
-            numTasksAttempted++;
-
-            // update tasksComplete or tasksFailed depending on completionStatus
-            if(completionStatus)
-                numTasksComplete++;
-            else
-                numTasksFailed++;
-            
-            // add executionTime to total execution time
-            totalExecutionTime = totalExecutionTime.add(executionTime);
-        }
-
-        // starts tracking a task
-        private void taskStarted(){
-            // check to make sure the previous task was completed
-            if(taskStartTime != null)
-                throw new ServerException("new task started without previous task finishing");
-
-            // record start time
-            taskStartTime = LocalTime.now();
-        }
+        // return task list
+        return allTasks;
     }
 }
