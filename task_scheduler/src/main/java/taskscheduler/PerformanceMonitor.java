@@ -3,8 +3,6 @@ package taskscheduler;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
 import java.util.Objects;
 import java.util.logging.Logger;
 
@@ -88,20 +86,19 @@ public class PerformanceMonitor {
     }
 
     // calculates and returns serverUtilization by dividing the amount of time each server has spent executing tasks by the amount of time spent on executeAllTasks
-    // takes as input a list of servers, and server stats will be returned for each server
-    public Map<Server, Float> getServerUtilization(List<Server> serverList){
+    public List<Double> getServerUtilization(){
         // technically checking for null, but want to notify user that loadStatsFor needs to be called to get up to date statistics
         if(serverStats == null)
             throw new NullPointerException("serverStats is null, make sure to call loadStatsFor(serverList) immediately before calling any other function to get up to date statistics");
 
         // holds return values
-        Map<Server, Float> serverUtilization = new HashMap<>();
+        List<Double> serverUtilization = new ArrayList<>();
 
         // get the amount of time that has passed since last startTracking()
         long timePassed = getTimePassed();
 
         // for each server, calculate the utilization & add it to serverUtilization
-        serverList.stream().forEach(s -> serverUtilization.put(s, ((float)s.getStats().getExecutionTime().toMillis() / timePassed)));
+        serverStats.stream().forEach(s -> serverUtilization.add((double)s.getExecutionTime().toMillis() / timePassed));
 
         return serverUtilization;
     }

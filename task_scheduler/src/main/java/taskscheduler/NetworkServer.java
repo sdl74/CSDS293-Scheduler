@@ -81,11 +81,4 @@ public class NetworkServer extends UnicastRemoteObject implements NetworkServerI
         // call server getStats method
         return server.getStats();
     }
-
-    // removes all tasks that have not executed yet and returns the removed tasks
-    @Override
-    public List<Task> removeAllTasks() throws RemoteException {
-        // call server removeAllTasks method
-        return server.removeAllTasks();
-    }
 }

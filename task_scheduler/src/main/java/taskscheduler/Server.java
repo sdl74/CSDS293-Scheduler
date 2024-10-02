@@ -4,6 +4,7 @@ import java.util.AbstractQueue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
@@ -37,8 +38,7 @@ public class Server{
     // copy constructor (for defensive copying). creates a new Server that is a copy of s
     public Server(Server s){
         // check for null
-        if(s == null)
-            throw new NullPointerException("cannot create a copy of a null server");
+        Objects.requireNonNull(s);
 
         // copy all taskQueues
         this.taskQueues = new ConcurrentHashMap<>();
@@ -52,8 +52,7 @@ public class Server{
     // adds a task to the queue
     public void addTask(Task task){
         // check for null task
-        if(task == null)
-            throw new NullPointerException("cannot add null task to the queue");
+        Objects.requireNonNull(task);
 
         // add the task to the correct queue
         taskQueues.get(task.getPriority()).add(task);
@@ -68,6 +67,9 @@ public class Server{
         // list to hold all completed tasks
         List<Task> completedTasks = new ArrayList<>();
 
+        // reset failed tasks list
+        failedTasks = new ArrayList<>();
+
         // iterate through each priority level in order
         for(TaskPriority p : TaskPriority.getOrder()){
             // get taskList for easy reference
@@ -80,7 +82,7 @@ public class Server{
                     serverMonitor.taskStarted();
 
                     // log that task started
-                    LOGGER.fine("task started. id: " + task.getId());
+                    LOGGER.log(Level.INFO, "task started. id: {0}", task.getId());
 
                     // execute the task with a timeout using the Future class
                     task.execute().get(Task.timeout.toMillis(), TimeUnit.MILLISECONDS);
@@ -89,16 +91,29 @@ public class Server{
                     serverMonitor.recordTask(true);
 
                     // log task completion
-                    LOGGER.fine("task completed. id: " + task.getId());
+                    LOGGER.log(Level.INFO, "task completed. id: {0}", task.getId());
                 }catch(InterruptedException | ExecutionException | TimeoutException e){
                     // log failed task
-                    LOGGER.warning("task timed out. id: " + task.getId());
+                    LOGGER.log(Level.WARNING, "task timed out. id: {0}", task.getId());
 
                     // run task cleanup (also has a timeout but if this task times out, it doesn't get to clean up)
                     try{
                         task.cleanup().get(Task.timeout.toMillis(), TimeUnit.MILLISECONDS);
                     }catch(InterruptedException | ExecutionException | TimeoutException e2){
-                        LOGGER.severe("task cleanup timed out. id: " + task.getId());
+                        LOGGER.log(Level.SEVERE, "task cleanup timed out. id: {0}", task.getId());
+                    }
+
+                    // tell serverMonitor that task failed
+                    serverMonitor.recordTask(false);
+                }catch(TaskException e){
+                    // log failed task
+                    LOGGER.log(Level.WARNING, "task failed. id: {0}", task.getId());
+
+                    // run task cleanup (also has a timeout but if this task times out, it doesn't get to clean up)
+                    try{
+                        task.cleanup().get(Task.timeout.toMillis(), TimeUnit.MILLISECONDS);
+                    }catch(InterruptedException | ExecutionException | TimeoutException e2){
+                        LOGGER.log(Level.SEVERE, "task cleanup timed out. id: {0}", task.getId());
                     }
 
                     // tell serverMonitor that task failed
@@ -136,20 +151,5 @@ public class Server{
     public boolean isOnline(){
         // the base Server class is local, so always reachable
         return true;
-    }
-
-    // removes all tasks that have not executed from the queue and returns them in a list
-    public List<Task> removeAllTasks(){
-        // holds all the tasks to return
-        List<Task> allTasks = new ArrayList<>();
-
-        // collect all tasks from the different queues
-        taskQueues.forEach((p, list) -> list.addAll(allTasks));
-
-        // reset taskQueue
-        TaskPriority.getOrder().stream().forEach(priority -> taskQueues.put(priority, new ConcurrentLinkedQueue<>()));
-
-        // return task list
-        return allTasks;
     }
 }

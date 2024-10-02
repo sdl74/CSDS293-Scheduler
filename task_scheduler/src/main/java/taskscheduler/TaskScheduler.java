@@ -46,7 +46,7 @@ public class TaskScheduler {
         // create blank priorityQueues for each priority in waitTimes
         TaskPriority.getOrder().forEach(p -> waitTimes.put(p, new PriorityQueue<ServerWait>()));
 
-        // create new performance monitor
+        // create new performance monitor & alert system
         performanceMonitor = new PerformanceMonitor();
     }
 
@@ -136,7 +136,7 @@ public class TaskScheduler {
 
                 // alert if tasks didn't get scheduled by checking if no tasks are scheduled
                 if(!tasksQueued)
-                    System.out.println("waited to retry tasks but none were scheduledy");
+                    System.out.println("waited to retry tasks but none were scheduled");
             }
         }
 
@@ -152,6 +152,13 @@ public class TaskScheduler {
 
     // getter method for the PerformanceMonitor
     public PerformanceMonitor getStats(){
+        // get a list of the servers (need to unpack from waitTimes)
+        List<Server> servers = waitTimes.get(TaskPriority.HIGH).stream().map(sw -> sw.server).collect(Collectors.toList());
+
+        // tell performanceMonitor to update stats for each server (the big amount of code is just getting a list of servers)
+        performanceMonitor.loadStatsFor(servers);
+
+        // return the performanceMonitor
         return performanceMonitor;
     }
 
@@ -160,29 +167,14 @@ public class TaskScheduler {
         // holds completed tasks
         Map<Server, List<Task>> completed = new HashMap<>();
 
-        // holds tasks that couldn't get executed this batch -> gets scheduled later
-        List<Task> rescheduleList = new ArrayList<>();
-
         // call execute on each server and collect completed tasks
-        servers.stream().forEach(s -> {
-            // encapsulate in try in case a server is unresponsive
-            try{
-                // execute tasks & put in completed task list
-                completed.put(s, s.executeTasks());
-            }catch(ServerException e){
-                // flush all tasks from server and add them to rescheduleList to get rescheduled for next batch
-                rescheduleList.addAll(s.removeAllTasks());
-            }
-        });
+        servers.stream().forEach(s -> completed.put(s, s.executeTasks()));
 
         // all queued tasks have been flushed, so reset flag & wait times
         tasksQueued = false;
         waitTimes.values().stream().forEach(q -> // iterate through each priority level
             q.stream().forEach(sw -> // iterate through each ServerWait
                 sw.expectedWait = Duration.ofMillis(0))); // set the wait time to 0
-        
-        // reschedule tasks that didn't get to execute (due to unresponsive server)
-        rescheduleList.stream().forEach(t -> queueTask(t));
 
         // return completed tasks
         return completed;
@@ -198,6 +190,9 @@ public class TaskScheduler {
         
         // schedule tasks with fulfilled dependencies
         dependencies.stream().filter(Dependency::canRun).forEach(t -> queueTask(t.dependentTask));
+
+        // remove scheduled dependent tasks
+        dependencies.removeIf(Dependency::canRun);
     }
 
     // adds a task to the dependent list
@@ -222,20 +217,8 @@ public class TaskScheduler {
 
     // collect all the failed tasks from each server and add them to the retryQueue if they can be retried
     private void collectFailedTasks(List<Server> servers){
-        // list containing all failed tasks
-        List<Task> failedTasks = new ArrayList<>();
-
-        // collect all the failed tasks into the list
-        servers.stream().forEach(server -> {
-            // try catch in case a server is unresponsive, just assume no tasks failed, and retry when server comes back online
-            try{
-                // gather failed tasks and add them to failedTasks list
-                failedTasks.addAll(server.getFailedTasks());
-            }catch(ServerException e){
-                // log that server is unavailable
-                LOGGER.warning("server is unresponsive so was unable to collect failed tasks for re-attempt");
-            }
-        });
+        // collect failed tasks into one list
+        List<Task> failedTasks = servers.stream().map(Server::getFailedTasks).flatMap(list -> list.stream()).collect(Collectors.toList());
 
         // update task attempt numbers
         failedTasks.stream().map(Task::getId).forEach(id -> {
@@ -243,8 +226,10 @@ public class TaskScheduler {
             Integer attemptNum = taskAttempts.computeIfPresent(id, (key, value) -> value + 1); 
 
             // put in 1 if this is first retry (task not present in attempts list)
-            if(attemptNum == null)
+            if(attemptNum == null){
                 taskAttempts.put(id, 1);
+                attemptNum = 1;
+            }
 
             // log failed task
             LOGGER.warning("task fail # " + attemptNum + ". id: " + id);
@@ -404,10 +389,10 @@ public class TaskScheduler {
         // returns the amount of time until the task can be retried (or 0 if the task can be executed now)
         public java.time.Duration getTimeUntil(){
             // subtract delayUntil from current time
-            long timeUntil = LocalTime.now().until(delayUntil, java.time.temporal.ChronoUnit.SECONDS);
+            long timeUntil = LocalTime.now().until(delayUntil, java.time.temporal.ChronoUnit.MILLIS);
 
             // make sure the time is not below 0 then return as java Duration
-            return java.time.Duration.ofSeconds(Math.min(0, timeUntil));
+            return java.time.Duration.ofMillis(Math.max(0, timeUntil));
         }
     }
 }

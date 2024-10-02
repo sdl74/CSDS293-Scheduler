@@ -18,7 +18,4 @@ public interface NetworkServerInterface extends Remote {
 
     // returns a view of ServerMonitor
     public ServerStats getStats() throws RemoteException;
-
-    // removes all tasks that have not executed yet and returns the removed tasks
-    public List<Task> removeAllTasks() throws RemoteException;
 }
