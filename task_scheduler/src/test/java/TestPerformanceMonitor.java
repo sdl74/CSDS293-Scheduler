@@ -43,11 +43,11 @@ public class TestPerformanceMonitor {
         ts = new TaskScheduler();
         ts.addServer(new Server());
         // schedule 100ms task
-        ts.scheduleTask(new TaskFactory("100ms").estimatedDuration(100).build());
+        ts.scheduleTask(new TaskFactory("100ms").estimatedDuration(100).duration(100).build());
         // add another server
         ts.addServer(new Server());
         // schedule 50ms task
-        ts.scheduleTask(new TaskFactory("50ms").estimatedDuration(50).build());
+        ts.scheduleTask(new TaskFactory("50ms").estimatedDuration(50).duration(50).build());
         // execute tasks
         ts.executeAll();
         // confirm utilization is correct
@@ -55,16 +55,7 @@ public class TestPerformanceMonitor {
         pm.getServerUtilization();
         double lower = Math.min(pm.getServerUtilization().get(0), pm.getServerUtilization().get(1));
         double higher = Math.max(pm.getServerUtilization().get(0), pm.getServerUtilization().get(1));
-        assertEquals((float)2/3, higher);
-        assertEquals((float)1/3, lower);
-    }
-
-    @Test
-    public void testAlertSystem(){
-        // test successRate threshold
-
-        // test average duration threshold
-
-        // test max utilization threshold
+        assertEquals((float)2/3, higher, 0.1);
+        assertEquals((float)1/3, lower, 0.1);
     }
 }

@@ -19,7 +19,6 @@ public class PerformanceMonitor {
 
     // adds a reference to serverStats, a helper class to keep track of specific server statistics
     public void loadStatsFor(List<Server> servers){
-        System.out.println("loading stats");
         // check for null value
         Objects.requireNonNull(servers);
 
@@ -41,7 +40,6 @@ public class PerformanceMonitor {
 
     // should run function when executeAllTasks is called, it initializes the startTime variable
     public void startTracking(){
-        System.out.println("starting");
         startTime = LocalTime.now();
     }
 
@@ -69,22 +67,20 @@ public class PerformanceMonitor {
 
     // calculates and returns the average success rate of tasks
     public float getSuccessRate(){
-        System.out.println("sr calculating");
-        System.out.println(serverStats);
         // technically checking for null, but want to notify user that loadStatsFor needs to be called to get up to date statistics
         if(serverStats == null)
             throw new NullPointerException("serverStats is null, make sure to call loadStatsFor(serverList) immediately before calling any other function to get up to date statistics");
-        System.out.println("chackpoint 1");
+        
         // from all servers, sum number of successful tasks
         int numTasksCompleted = serverStats.stream()
             .map(ServerStats::getTasksCompleted)
             .reduce(0, (sum, newVal) -> sum + newVal);
-            System.out.println("chackpoint 2");
+            
         // from all servers, sum number of attempted tasks
         int numTasksAttempted = serverStats.stream()
             .map(ServerStats::getTasksAttempted)
             .reduce(0, (sum, newVal) -> sum + newVal);
-            System.out.println("chackpoint 3");
+            
         // calculate and return the success rate (successful tasks / attempted tasks)
         return (float)numTasksCompleted / numTasksAttempted;
     }
@@ -103,7 +99,6 @@ public class PerformanceMonitor {
 
         // for each server, calculate the utilization & add it to serverUtilization
         serverStats.stream().forEach(s -> serverUtilization.add((double)s.getExecutionTime().toMillis() / timePassed));
-
         return serverUtilization;
     }
 

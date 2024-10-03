@@ -88,7 +88,7 @@ public class Server{
                     task.execute().get(Task.timeout.toMillis(), TimeUnit.MILLISECONDS);
 
                     // tell serverMonitor that task finished
-                    serverMonitor.recordTask(true);
+                    serverMonitor.recordTask(task.isCompleted());
 
                     // log task completion
                     LOGGER.log(Level.INFO, "task completed. id: {0}", task.getId());
