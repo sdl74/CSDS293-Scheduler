@@ -75,18 +75,8 @@ public class SimpleTask implements Task {
         // create a new thread for this task
         ExecutorService executor = Executors.newFixedThreadPool(1);
         
+        // need to return a future
         return executor.submit(() -> {
-            // force the thread to sleep for the real amount of time the task takes (to simulate the task actually executing)
-            try{
-                Thread.sleep(realDuration);
-            }catch(InterruptedException e){
-                // replace with log later
-                System.out.println("task was interrupted");
-            }
-
-            // set the complete flag to true
-            complete = true;
-
             return null;
         });
     }

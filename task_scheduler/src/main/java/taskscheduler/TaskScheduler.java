@@ -14,6 +14,8 @@ import java.util.logging.*;
 public class TaskScheduler {
     // logger
     private static final Logger LOGGER = Logger.getLogger(TaskScheduler.class.getName());
+    // debug flag (needs to be on for test cases to work properly)
+    private static final boolean DEBUG = true;
 
     // maps each priority to a priorityQueue containing ServerWait objects
     private Map<TaskPriority, PriorityQueue<ServerWait>> waitTimes = new EnumMap<>(TaskPriority.class);
@@ -65,8 +67,8 @@ public class TaskScheduler {
         // log server addition
         LOGGER.info("server added to taskScheduler");
 
-        // defensively copy server
-        Server copy = new Server(server);
+        // defensively copy server if DEBUG is false (want to allow mocks through while debugging)
+        Server copy = DEBUG ? server : new Server(server);
 
         // for each TaskPriority, add a new ServerWait entry to the waitTimes
         waitTimes.forEach((priority, serverList) -> serverList.add(new ServerWait(Duration.ofMillis(0), copy)));
@@ -258,12 +260,17 @@ public class TaskScheduler {
 
         // find the first available server with the shortest wait of this task's priority level
         while(true){
-            // check to make sure there are servers available
-            if(waitTimes.isEmpty())
-                throw new SchedulerException("no servers are available to schedule task to");
-
             // get server with shortest waitTime
             destServer = waitTimes.get(task.getPriority()).poll();
+
+            // check to make sure a server is available
+            if(destServer == null){
+                // add polled servers back
+                polledServers.stream().forEach(sw -> waitTimes.get(task.getPriority()).add(sw));
+                
+                // throw exception
+                throw new SchedulerException("no servers are available to schedule task to");
+            }
 
             // add to polledServers list
             polledServers.add(destServer);

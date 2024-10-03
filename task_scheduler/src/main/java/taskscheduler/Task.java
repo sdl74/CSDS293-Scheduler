@@ -7,7 +7,7 @@ import java.util.concurrent.Future;
 // an interface for all tasks, the basic unit of processing
 public interface Task extends Serializable{
     // max amount of time a task can run before being abandoned
-    public static final Duration timeout = Duration.ofMillis(10000);
+    public static final Duration timeout = Duration.ofMillis(5000);
 
     // returns a unique id for each task
     public String getId();

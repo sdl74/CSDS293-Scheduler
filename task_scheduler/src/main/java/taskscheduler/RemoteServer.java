@@ -5,7 +5,6 @@ import java.rmi.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -95,7 +94,7 @@ public class RemoteServer extends Server {
     @Override
     public void addTask(Task task){
         // check for circuit breaker threshold exceeded, don't even try to schedule
-        if(numFails > circuitBreakerThreshold)
+        if(isCircuitBroken())
             throw new ServerException("remote server unresponsive, failed to schedule task");
 
         // check for null values
@@ -117,7 +116,7 @@ public class RemoteServer extends Server {
     @Override
     public List<Task> executeTasks() {
         // check for circuit breaker threshold exceeded, don't even try to schedule
-        if(numFails > circuitBreakerThreshold){
+        if(isCircuitBroken()){
             // log failure
             LOGGER.severe("server unreachable. executeTasks() failed");
 
@@ -141,7 +140,7 @@ public class RemoteServer extends Server {
     @Override
     public List<Task> getFailedTasks() {
         // check for circuit breaker threshold exceeded, don't even try to schedule
-        if(numFails > circuitBreakerThreshold){
+        if(isCircuitBroken()){
             // log failure
             LOGGER.severe("server unreachable. getFailedTasks() failed");
 
@@ -165,7 +164,7 @@ public class RemoteServer extends Server {
     @Override
     public ServerStats getStats() {
         // check for circuit breaker threshold exceeded, don't even try to schedule
-        if(numFails > circuitBreakerThreshold){
+        if(isCircuitBroken()){
             // log failure
             LOGGER.severe("server unreachable. getStats() failed");
 
