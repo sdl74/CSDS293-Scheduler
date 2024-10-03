@@ -6,6 +6,8 @@ import java.rmi.RemoteException;
 public class Main {
     public static void main(String[] args) {
         testNormal();
+        System.out.println("\n\n");
+        testRemote();
     }
 
     // you will need to have an rmi instance running for this to work

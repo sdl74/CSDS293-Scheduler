@@ -198,8 +198,6 @@ public class RemoteServer extends Server {
         // if server is offline, attempt to reconnect the stub (do nothing with the Exception because we're expecting to still fail)
         if(!status)
             try{bindStub();}catch(RemoteException e){}
-        
-        System.out.println("reset yes");
     }
 
     // returns true if numFails exceeds circuitBreakerThreshold, meaning that circuit is currently broken
