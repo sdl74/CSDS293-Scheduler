@@ -72,6 +72,7 @@ public class RemoteServer extends Server {
 
         try{
             // search for the remote object on the rmi registry
+            // use instanceof to check cast type
             stub = (NetworkServerInterface)Naming.lookup("rmi://localhost:" + port + "/" + id);
 
             // change status to indicate that server is reachable

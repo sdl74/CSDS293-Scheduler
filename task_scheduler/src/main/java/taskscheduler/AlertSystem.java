@@ -14,7 +14,7 @@ public class AlertSystem {
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     
     // if less than this percent of tasks succeed, create an alert
-    private double successRateThreshold = -1;
+    private double successRateThreshold = 1;
     // if the average amount of time it takes for a task to complete exceeds this duration, create an alert
     private Duration averageExecutionThreshold = null;
     // if the ratio of server utilization (specific utilization / total utilization) exceeds this number, create an alert

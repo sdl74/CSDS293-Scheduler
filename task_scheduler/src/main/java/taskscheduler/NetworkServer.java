@@ -9,6 +9,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.List;
 import java.util.Objects;
 
+// this is my own class (not in the requirements for assignment)
+
 // this is the remote server implementation. this runs Server commands over the network using rmi
 public class NetworkServer extends UnicastRemoteObject implements NetworkServerInterface {
     // default port: 1900
@@ -41,6 +43,7 @@ public class NetworkServer extends UnicastRemoteObject implements NetworkServerI
             return;
         }catch(AlreadyBoundException e){
             // notify the user that a server with that name already exists
+            // make exception
             System.out.println("remote server creation failed: server with that name already exists");
             return;
         }
